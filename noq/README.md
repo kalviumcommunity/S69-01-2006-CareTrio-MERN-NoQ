@@ -93,9 +93,9 @@ MongoDB Atlas
 
 Deployment
 
-Frontend: Vercel / AWS Amplify
+Frontend: Vercel 
 
-Backend: Render / AWS EC2 / Azure App Service
+Backend: Render 
 
 Database: MongoDB Atlas
 
