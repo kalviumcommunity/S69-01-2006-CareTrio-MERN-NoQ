@@ -219,4 +219,4 @@ The project is successful if:
 
 🏁 Conclusion
 
-This project delivers a practical, scalable, and affordable digital queue system tailored for hospitals in Tier-2/3 cities — improving patient experience and hospital efficiency without costly infrastructure.
+This project delivers a practical, scalable, and affordable digital queue system tailored for hospitals in Tier-2/3 cities — improving patient experience and hospital efficiency without costly infrastructure!
