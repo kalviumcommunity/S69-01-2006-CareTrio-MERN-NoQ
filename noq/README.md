@@ -220,3 +220,5 @@ The project is successful if:
 🏁 Conclusion
 
 This project delivers a practical, scalable, and affordable digital queue system tailored for hospitals in Tier-2/3 cities — improving patient experience and hospital efficiency without costly infrastructure.
+
+Current progress: The testing of the MVP is in progress. For now, It you can select your role (Patient/ Doctor) followed by the generation of a token for the patient while the doctor getting the same token and manage the queue accordingly.
