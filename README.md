@@ -225,3 +225,21 @@ This project delivers a practical, scalable, and affordable digital queue system
 Current progress: 
 The testing of the MVP is in progress. 
 For now, It you can select your role (Patient/ Doctor) followed by the generation of a token for the patient while the doctor getting the same token and manage the queue accordingly.
+
+Personal Detail- 
+
+These decisions are final so we don’t go in circles:
+
+✅ Backend: Express
+
+✅ Database: SQLite
+
+✅ Auth: bcrypt + JWT
+
+✅ Doctor = Admin
+
+✅ Patient does NOT need login
+
+✅ Patient medical data must be saved
+
+✅ Doctor admin page can view it
