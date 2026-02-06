@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { z } = require("zod");
 
 const app = express();
 app.use(cors());
@@ -44,6 +45,7 @@ db.run(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     phone TEXT,
+    email TEXT,
     department TEXT,
     token TEXT,
     status TEXT
@@ -54,6 +56,28 @@ db.run(`
 db.run(`ALTER TABLE patients ADD COLUMN disease TEXT`, () => {});
 db.run(`ALTER TABLE patients ADD COLUMN consulted_at DATETIME`, () => {});
 db.run(`ALTER TABLE patients ADD COLUMN doctor_id INTEGER`, () => {});
+
+// =========================
+// ZOD SCHEMAS (MINIMAL)
+// =========================
+
+const signupSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+const patientSchema = z.object({
+  name: z.string().min(2),
+  phone: z.string().min(8),
+  email: z.string().email().optional(),
+  department: z.string().min(2),
+});
 
 // =========================
 // JWT MIDDLEWARE
@@ -67,7 +91,7 @@ function authenticateDoctor(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.doctor = decoded; // { id, role }
+    req.doctor = decoded;
     next();
   } catch {
     return res.status(403).json({ message: "Invalid or expired token" });
@@ -80,9 +104,12 @@ function authenticateDoctor(req, res, next) {
 
 // SIGNUP
 app.post("/auth/signup", async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password)
-    return res.status(400).json({ message: "All fields required" });
+  const parsed = signupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.issues });
+  }
+
+  const { name, email, password } = parsed.data;
 
   db.get(`SELECT * FROM users WHERE email = ?`, [email], async (_, user) => {
     if (user) return res.status(400).json({ message: "User already exists" });
@@ -99,7 +126,12 @@ app.post("/auth/signup", async (req, res) => {
 
 // LOGIN
 app.post("/auth/login", async (req, res) => {
-  const { email, password } = req.body;
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.issues });
+  }
+
+  const { email, password } = parsed.data;
 
   db.get(`SELECT * FROM users WHERE email = ?`, [email], async (_, user) => {
     if (!user)
@@ -130,19 +162,24 @@ function generateToken() {
 
 // REGISTER PATIENT (PUBLIC)
 app.post("/register", (req, res) => {
-  const { name, phone, department } = req.body;
+  const parsed = patientSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ errors: parsed.error.issues });
+  }
+
+  const { name, phone, email, department } = parsed.data;
   const token = generateToken();
 
   db.run(
-    `INSERT INTO patients (name, phone, department, token, status)
-     VALUES (?, ?, ?, ?, ?)`,
-    [name, phone, department, token, "waiting"],
+    `INSERT INTO patients (name, phone, email, department, token, status)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [name, phone, email || null, department, token, "waiting"],
     () => res.json({ token })
   );
 });
 
 // =========================
-// CALL NEXT PATIENT (PROTECTED)
+// CALL NEXT PATIENT
 // =========================
 app.get("/next", authenticateDoctor, (req, res) => {
   const doctorId = req.doctor.id;
@@ -154,7 +191,7 @@ app.get("/next", authenticateDoctor, (req, res) => {
         return res.json({ message: "No patients waiting" });
 
       db.run(
-        `UPDATE patients 
+        `UPDATE patients
          SET status = 'in_consultation', doctor_id = ?
          WHERE id = ?`,
         [doctorId, patient.id]
@@ -170,7 +207,7 @@ app.get("/next", authenticateDoctor, (req, res) => {
 });
 
 // =========================
-// SAVE CONSULTATION (PHASE 4)
+// SAVE CONSULTATION
 // =========================
 app.post("/consult", authenticateDoctor, (req, res) => {
   const { patient_id, disease } = req.body;
@@ -186,28 +223,24 @@ app.post("/consult", authenticateDoctor, (req, res) => {
          status = 'done'
      WHERE id = ? AND doctor_id = ?`,
     [disease, patient_id, doctorId],
-    function () {
-      res.json({ message: "Consultation saved" });
-    }
+    () => res.json({ message: "Consultation saved" })
   );
 });
 
 // =========================
-// GET TODAY'S PATIENTS (ADMIN)
+// GET TODAY'S PATIENTS
 // =========================
 app.get("/admin/today-patients", authenticateDoctor, (req, res) => {
   const doctorId = req.doctor.id;
 
   db.all(
-    `SELECT name, phone, department, disease, consulted_at
+    `SELECT name, phone, email, department, disease, consulted_at
      FROM patients
      WHERE status = 'done'
        AND doctor_id = ?
        AND DATE(consulted_at) = DATE('now')`,
     [doctorId],
-    (_, rows) => {
-      res.json(rows);
-    }
+    (_, rows) => res.json(rows)
   );
 });
 

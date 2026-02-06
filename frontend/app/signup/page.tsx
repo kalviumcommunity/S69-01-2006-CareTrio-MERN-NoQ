@@ -1,64 +1,92 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const router = useRouter();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
     setError("");
 
-    const res = await fetch("http://localhost:5000/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || "Signup failed");
+    if (!name || !email || !password) {
+      setError("All fields are required");
       return;
     }
 
-    router.push("/login");
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:5000/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Signup failed");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/login");
+    } catch {
+      setError("Server error. Try again.");
+    }
+
+    setLoading(false);
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="bg-white p-8 rounded-xl shadow w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Doctor Signup</h1>
+    <main className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md text-slate-900">
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          Doctor Signup
+        </h1>
 
-        {error && <p className="text-red-600 mb-3">{error}</p>}
+        {error && (
+          <p className="mb-4 text-red-600 text-sm text-center font-medium">
+            {error}
+          </p>
+        )}
 
         <input
-          placeholder="Name"
-          className="border p-3 w-full mb-4 rounded"
+          placeholder="Full Name"
+          className="border border-slate-300 p-3 w-full mb-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
         <input
-          placeholder="Email"
-          className="border p-3 w-full mb-4 rounded"
+          type="email"
+          placeholder="Email Address"
+          className="border border-slate-300 p-3 w-full mb-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
           type="password"
-          placeholder="Password"
-          className="border p-3 w-full mb-4 rounded"
+          placeholder="Password (min 6 chars)"
+          className="border border-slate-300 p-3 w-full mb-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <button
           onClick={handleSignup}
-          className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
         >
-          Create Account
+          {loading ? "Creating account..." : "Create Account"}
         </button>
       </div>
     </main>

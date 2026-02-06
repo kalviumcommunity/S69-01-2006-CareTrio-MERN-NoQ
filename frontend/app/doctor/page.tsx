@@ -32,7 +32,7 @@ export default function DoctorPage() {
     else fetchTodayPatients();
   }, [router]);
 
-  // Fetch today's patients
+  // Fetch today's patients (✅ FIXED)
   const fetchTodayPatients = async () => {
     setLoadingTable(true);
     const token = localStorage.getItem("token");
@@ -47,11 +47,21 @@ export default function DoctorPage() {
           },
         }
       );
+
       const data = await res.json();
-      setTodayPatients(data || []);
+
+      // 🔒 Normalize response to ALWAYS be an array
+      if (Array.isArray(data)) {
+        setTodayPatients(data);
+      } else if (Array.isArray(data.patients)) {
+        setTodayPatients(data.patients);
+      } else {
+        setTodayPatients([]);
+      }
     } catch {
-      // silent fail for demo safety
+      setTodayPatients([]);
     }
+
     setLoadingTable(false);
   };
 
@@ -119,7 +129,7 @@ export default function DoctorPage() {
       setMessage("Consultation saved successfully");
       setCurrentPatient(null);
       setDisease("");
-      fetchTodayPatients(); // refresh admin table
+      fetchTodayPatients();
     } catch {
       setMessage("Server error");
     }
@@ -200,7 +210,8 @@ export default function DoctorPage() {
                     <th className="px-6 py-3">Time</th>
                   </tr>
                 </thead>
-                <tbody>
+
+                <tbody className="text-slate-900">
                   {todayPatients.map((p, i) => (
                     <tr
                       key={i}
