@@ -1,7 +1,7 @@
 # S69-01-2006-CareTrio-MERN-NoQ
 This is your first 🏥 Digital Queue Management System
 
-A lightweight, web-based digital queue management system designed for Tier-2 and Tier-3 hospitals to reduce waiting chaos, improve patient flow, and provide real-time queue visibility — without expensive hardware.
+A lightweight, web-based digital queue management system designed for Tier-2 and Tier-3 hospitals in order to reduce waiting chaos, improve patient flow, and provide real-time queue visibility — without expensive hardware.
 
 📌 Problem Context
 
