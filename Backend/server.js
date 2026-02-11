@@ -172,6 +172,7 @@ app.get("/next", authenticateDoctor, (req, res) => {
 // =========================
 // SAVE CONSULTATION (PHASE 4)
 // =========================
+
 app.post("/consult", authenticateDoctor, (req, res) => {
   const { patient_id, disease } = req.body;
   const doctorId = req.doctor.id;
