@@ -9,7 +9,6 @@ export default function PatientPage() {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const registerPatient = async () => {
     setError("");
 
