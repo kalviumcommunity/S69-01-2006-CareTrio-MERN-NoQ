@@ -195,6 +195,7 @@ app.post("/consult", authenticateDoctor, (req, res) => {
 // =========================
 // GET TODAY'S PATIENTS (ADMIN)
 // =========================
+
 app.get("/admin/today-patients", authenticateDoctor, (req, res) => {
   const doctorId = req.doctor.id;
 
