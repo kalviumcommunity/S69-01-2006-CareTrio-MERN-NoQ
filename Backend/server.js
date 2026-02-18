@@ -5,6 +5,7 @@ const sqlite3 = require("sqlite3").verbose();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { z } = require("zod");
+const nodemailer = require("nodemailer");
 
 const app = express();
 app.use(cors());
@@ -16,6 +17,30 @@ app.use(bodyParser.json());
 const JWT_SECRET = process.env.JWT_SECRET || "noq_super_secret";
 
 // =========================
+// EMAIL CONFIG (NODEMAILER)
+// =========================
+let transporter;
+
+async function createTestAccount() {
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    console.log("📨 Ethereal Email Configured:", testAccount.user);
+  } catch (e) {
+    console.error("Failed to create test account", e);
+  }
+}
+createTestAccount();
+
+// =========================
 // DATABASE
 // =========================
 const db = new sqlite3.Database("./queue.db", (err) => {
@@ -24,43 +49,57 @@ const db = new sqlite3.Database("./queue.db", (err) => {
 });
 
 // =========================
-// TABLES
+// TABLES & MIGRATIONS
 // =========================
+db.serialize(() => {
+  // USERS (Doctor/Admin)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'doctor',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
-// USERS (Doctor/Admin)
-db.run(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'doctor',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+  // PATIENTS
+  db.run(`
+    CREATE TABLE IF NOT EXISTS patients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      phone TEXT,
+      email TEXT,
+      department TEXT,
+      token TEXT,
+      status TEXT
+    )
+  `);
 
-// PATIENTS
-db.run(`
-  CREATE TABLE IF NOT EXISTS patients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    phone TEXT,
-    email TEXT,
-    department TEXT,
-    token TEXT,
-    status TEXT
-  )
-`);
+  // EXTEND PATIENTS (safe for SQLite MVP)
+  db.run(`ALTER TABLE patients ADD COLUMN disease TEXT`, () => {});
+  db.run(`ALTER TABLE patients ADD COLUMN medicine TEXT`, () => {}); 
+  db.run(`ALTER TABLE patients ADD COLUMN remarks TEXT`, () => {});  
+  db.run(`ALTER TABLE patients ADD COLUMN consulted_at DATETIME`, () => {});
+  db.run(`ALTER TABLE patients ADD COLUMN doctor_id INTEGER`, () => {});
+  db.run(`ALTER TABLE patients ADD COLUMN email TEXT`, () => {}); 
+  db.run(`ALTER TABLE patients ADD COLUMN called_at DATETIME`, () => {});
 
-// EXTEND PATIENTS (safe for SQLite MVP)
-db.run(`ALTER TABLE patients ADD COLUMN disease TEXT`, () => {});
-db.run(`ALTER TABLE patients ADD COLUMN consulted_at DATETIME`, () => {});
-db.run(`ALTER TABLE patients ADD COLUMN doctor_id INTEGER`, () => {});
+  // RECOVER STUCK CONSULTATIONS (PERMANENT FIX)
+  db.run(`
+    UPDATE patients
+    SET status = 'waiting',
+      doctor_id = NULL
+    WHERE status = 'in_consultation'
+  `, (err) => {
+      if (err && err.code !== 'SQLITE_ERROR') console.error(err); 
+  });
+});
 
 // =========================
 // ZOD SCHEMAS (MINIMAL)
 // =========================
-
 const signupSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -101,7 +140,6 @@ function authenticateDoctor(req, res, next) {
 // =========================
 // AUTH ROUTES
 // =========================
-
 // SIGNUP
 app.post("/auth/signup", async (req, res) => {
   const parsed = signupSchema.safeParse(req.body);
@@ -142,20 +180,18 @@ app.post("/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
 
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, name: user.name, email: user.email }, // Added name/email to token
       JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "10h" }
     );
 
-    res.json({ token });
+    res.json({ token, user: { name: user.name, email: user.email, role: user.role } });
   });
 });
 
 // =========================
 // QUEUE LOGIC
 // =========================
-
-// Generate token
 function generateToken() {
   return `A${Math.floor(100 + Math.random() * 900)}`;
 }
@@ -174,71 +210,213 @@ app.post("/register", (req, res) => {
     `INSERT INTO patients (name, phone, email, department, token, status)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [name, phone, email || null, department, token, "waiting"],
-    () => res.json({ token })
-  );
-});
-
-// =========================
-// CALL NEXT PATIENT
-// =========================
-app.get("/next", authenticateDoctor, (req, res) => {
-  const doctorId = req.doctor.id;
-
-  db.get(
-    `SELECT * FROM patients WHERE status = 'waiting' ORDER BY id ASC LIMIT 1`,
-    (_, patient) => {
-      if (!patient)
-        return res.json({ message: "No patients waiting" });
-
-      db.run(
-        `UPDATE patients
-         SET status = 'in_consultation', doctor_id = ?
-         WHERE id = ?`,
-        [doctorId, patient.id]
-      );
-
-      res.json({
-        patient_id: patient.id,
-        token: patient.token,
-        name: patient.name,
-      });
+    function (err) {
+      if (err) {
+        console.error("❌ Registration INSERT Error:", err.message);
+        return res.status(500).json({ error: "Failed to save patient" });
+      }
+      res.json({ token });
     }
   );
 });
 
 // =========================
-// SAVE CONSULTATION
+// DOCTOR ACTIONS
 // =========================
-app.post("/consult", authenticateDoctor, (req, res) => {
-  const { patient_id, disease } = req.body;
-  const doctorId = req.doctor.id;
 
-  if (!patient_id || !disease)
-    return res.status(400).json({ message: "Patient ID and disease required" });
-
-  db.run(
-    `UPDATE patients
-     SET disease = ?, 
-         consulted_at = CURRENT_TIMESTAMP,
-         status = 'done'
-     WHERE id = ? AND doctor_id = ?`,
-    [disease, patient_id, doctorId],
-    () => res.json({ message: "Consultation saved" })
+// GET WAITING PATIENTS
+app.get("/doctor/waiting-patients", authenticateDoctor, (req, res) => {
+  db.all(
+    `SELECT id, name, token, department, phone
+     FROM patients
+     WHERE status = 'waiting'
+     ORDER BY id ASC`,
+    (err, rows) => {
+       if (err) {
+         console.error(err);
+         return res.status(500).json({ error: "Database error" });
+       }
+       res.json(rows);
+    }
   );
 });
 
-// =========================
+// CALL NEXT PATIENT
+app.get("/next", authenticateDoctor, (req, res) => {
+  const doctorId = req.doctor.id;
+
+  db.serialize(() => {
+    db.get(
+      `SELECT * FROM patients
+       WHERE status = 'waiting'
+        AND doctor_id IS NULL
+       ORDER BY id ASC
+       LIMIT 1`,
+      (err, patient) => {
+        if (!patient) {
+          return res.json({ message: "No patients waiting" });
+        }
+
+        const now = new Date().toISOString();
+        db.run(
+          `UPDATE patients
+           SET status = 'in_consultation',
+               doctor_id = ?,
+               called_at = ?
+           WHERE id = ?`,
+          [doctorId, now, patient.id],
+          function () {
+            res.json({
+              patient_id: patient.id,
+              token: patient.token,
+              name: patient.name,
+              phone: patient.phone,
+              email: patient.email, // Added email
+              department: patient.department,
+            });
+          }
+        );
+      }
+    );
+  });
+});
+
+// GET ACTIVE PATIENT (RECOVERY)
+app.get("/doctor/active-patient", authenticateDoctor, (req, res) => {
+  const doctorId = req.doctor.id;
+
+  db.get(
+    `SELECT * FROM patients
+     WHERE status = 'in_consultation'
+       AND doctor_id = ?`,
+    [doctorId],
+    (err, patient) => {
+      if (!patient) return res.json(null);
+      res.json({
+        patient_id: patient.id,
+        token: patient.token,
+        name: patient.name,
+        phone: patient.phone,
+        email: patient.email, // Added email
+        department: patient.department,
+      });
+    }
+  );
+});
+
+// SAVE CONSULTATION
+app.post("/consult", authenticateDoctor, (req, res) => {
+  const { patient_id, disease, medicine, remarks, status } = req.body; 
+  const doctorId = req.doctor.id;
+
+  // If skipping, we might not have disease, so we relax validation if status is skipped
+  if (!patient_id) {
+    return res.status(400).json({ message: "Patient ID required" });
+  }
+
+  const finalStatus = status === 'skipped' ? 'skipped' : 'done';
+
+  db.run(
+    `UPDATE patients
+     SET disease = ?,
+         medicine = ?,
+         remarks = ?,
+         consulted_at = CURRENT_TIMESTAMP,
+         status = ?
+     WHERE id = ? AND doctor_id = ?`,
+    [disease, medicine || "", remarks || "", finalStatus, patient_id, doctorId],
+    function () {
+      if (this.changes === 0) {
+        return res
+          .status(403)
+          .json({ message: "Patient not assigned to this doctor" });
+      }
+
+      res.json({ message: "Consultation saved" });
+    }
+  );
+});
+
+// DELETE PATIENT
+app.delete("/patients/:id", authenticateDoctor, (req, res) => {
+  const id = req.params.id;
+  db.run("DELETE FROM patients WHERE id = ?", [id], function (err) {
+    if (err) return res.status(500).json({ message: "Database error" });
+    res.json({ message: "Patient deleted" });
+  });
+});
+
+// NOTIFY PATIENT (EMAIL)
+app.post("/notify", authenticateDoctor, async (req, res) => {
+  const { email, name, message } = req.body;
+
+  if (!email || !message) {
+    return res.status(400).json({ message: "Email and message required" });
+  }
+
+  if (!transporter) {
+     return res.status(503).json({ message: "Email service not ready" });
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: '"CareTrio Clinic" <clinic@caretrio.com>',
+      to: email,
+      subject: "Your Consultation Report - CareTrio",
+      text: `Dear ${name},\n\n${message}\n\nStay Healthy,\nCareTrio Team`,
+      html: `<p>Dear <b>${name}</b>,</p><p>${message.replace(/\n/g, "<br>")}</p><p>Stay Healthy,<br><b>CareTrio Team</b></p>`,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+
+    res.json({ message: "Email sent successfully", preview: nodemailer.getTestMessageUrl(info) });
+  } catch (error) {
+    console.error("Email error:", error);
+    res.status(500).json({ message: "Failed to send email" });
+  }
+});
+
+// PUBLIC QUEUE STATUS
+app.get("/queue-status", (req, res) => {
+  const response = {
+    current: null,
+    upcoming: []
+  };
+
+  db.serialize(() => {
+    // Get latest active patient (across all doctors)
+    db.get(
+      `SELECT token, doctor_id FROM patients 
+       WHERE status = 'in_consultation' 
+       ORDER BY called_at DESC LIMIT 1`, 
+      (err, row) => {
+        if (row) response.current = row;
+        
+        // Get next 5 waiting
+        db.all(
+          `SELECT token FROM patients WHERE status = 'waiting' ORDER BY id ASC LIMIT 5`,
+          (err, rows) => {
+             response.upcoming = rows || [];
+             res.json(response);
+          }
+        );
+      }
+    );
+  });
+});
+
 // GET TODAY'S PATIENTS
-// =========================
 app.get("/admin/today-patients", authenticateDoctor, (req, res) => {
   const doctorId = req.doctor.id;
 
   db.all(
-    `SELECT name, phone, email, department, disease, consulted_at
+    `SELECT id, name, phone, email, department, disease, consulted_at
      FROM patients
-     WHERE status = 'done'
+     WHERE status = 'done' or status = 'skipped'
        AND doctor_id = ?
-       AND DATE(consulted_at) = DATE('now')`,
+       AND DATE(consulted_at) = DATE('now')
+     ORDER BY consulted_at DESC`,
     [doctorId],
     (_, rows) => res.json(rows)
   );

@@ -1,18 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { UserPlus, ArrowRight, Lock, Mail, User } from "lucide-react";
+import Link from "next/link";
 
 export default function SignupPage() {
   const router = useRouter();
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSignup = async () => {
+  // Redirect if already logged in
+  useEffect(() => {
+     const token = localStorage.getItem("token");
+     if (token) router.replace("/doctor");
+  }, [router]);
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError("");
 
     if (!name || !email || !password) {
@@ -21,14 +30,12 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-
     try {
       const res = await fetch("http://localhost:5000/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -37,58 +44,125 @@ export default function SignupPage() {
         return;
       }
 
-      router.push("/login");
+      router.push("/login"); // Redirect to login after success
     } catch {
       setError("Server error. Try again.");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md text-slate-900">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Doctor Signup
-        </h1>
-
-        {error && (
-          <p className="mb-4 text-red-600 text-sm text-center font-medium">
-            {error}
-          </p>
-        )}
-
-        <input
-          placeholder="Full Name"
-          className="border border-slate-300 p-3 w-full mb-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <input
-          type="email"
-          placeholder="Email Address"
-          className="border border-slate-300 p-3 w-full mb-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Password (min 6 chars)"
-          className="border border-slate-300 p-3 w-full mb-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button
-          onClick={handleSignup}
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row-reverse">
+        
+        {/* Right Side - Hero/Brand (Reversed for Signup) */}
+        <motion.div 
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          className="md:w-1/2 bg-gradient-to-bl from-blue-600 to-indigo-600 p-12 text-white flex flex-col justify-between"
         >
-          {loading ? "Creating account..." : "Create Account"}
-        </button>
+          <div>
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6">
+              <UserPlus size={28} className="text-white" />
+            </div>
+            <h1 className="text-4xl font-bold mb-4">Join CareTrio</h1>
+            <p className="text-blue-100 text-lg leading-relaxed">
+              Create your doctor account to start managing your patients efficiently.
+            </p>
+          </div>
+          <div className="mt-8 md:mt-0">
+             <p className="text-sm text-blue-100/80">© 2026 CareTrio Clinic System</p>
+          </div>
+        </motion.div>
+
+        {/* Left Side - Form */}
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center"
+        >
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">Get Started</h2>
+            <p className="text-slate-500">Create your new account</p>
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none placeholder:text-gray-500 text-gray-900"
+                  placeholder="Dr. John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="email"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none placeholder:text-gray-500 text-gray-900"
+                  placeholder="doctor@caretrio.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="password"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none placeholder:text-gray-500 text-gray-900"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {error && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-500 text-sm bg-red-50 p-3 rounded-lg text-center"
+              >
+                {error}
+              </motion.p>
+            )}
+
+            <button
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-200 hover:shadow-blue-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Create Account <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <p className="mt-8 text-center text-slate-500 text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 font-bold hover:underline">
+              Sign In
+            </Link>
+          </p>
+        </motion.div>
       </div>
-    </main>
+    </div>
   );
 }

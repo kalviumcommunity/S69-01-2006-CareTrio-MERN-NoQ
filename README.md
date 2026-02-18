@@ -1,245 +1,101 @@
-# S69-01-2006-CareTrio-MERN-NoQ
-This is your first 🏥 Digital Queue Management System
+# 🏥 NoQ - Smart Digital Queue Management
 
-A lightweight, web-based digital queue management system designed for Tier-2 and Tier-3 hospitals to reduce waiting chaos, improve patient flow, and provide real-time queue visibility — without expensive hardware.
+![NoQ Banner](https://img.shields.io/badge/Status-Live-green?style=for-the-badge) 
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-3.4-blue?style=for-the-badge&logo=tailwind-css)
+![SQLite](https://img.shields.io/badge/SQLite-3-003B57?style=for-the-badge&logo=sqlite)
 
-📌 Problem Context
+**NoQ** is a modern, web-based digital queue management system designed to eliminate chaos in hospital waiting rooms. It empowers patients to book appointments from home and track their status in real-time, while giving doctors a powerful dashboard to manage patient flow efficiently.
 
-In many Tier-2/3 cities, hospitals still rely on physical queues for appointments. This leads to:
+---
 
-Long patient waiting times
+## � Key Features
 
-Overcrowding and confusion
+### 🩺 For Doctors (Dashboard)
+- **Live Queue Management**: Call the next patient, skip absentees, or mark consultations as done with one click.
+- **Smart Status**: Tracks "Waiting", "In Consultation", "Skipped", and "Completed" patients.
+- **Consultation Records**: Log diagnosis, medicines, and remarks for every patient.
+- **History Management**: View and delete today's treated patient records.
 
-No real-time queue visibility
+### 📱 For Patients
+- **Instant Booking**: Simple registration form (Name, Phone, Department) to get a digital token.
+- **Live Tracking**: View the current token being served from anywhere—no more waiting in crowded halls.
+- **Real-Time Updates**: Status updates ("Your turn is next!") to reduce anxiety.
 
-Stress for both patients and hospital staff
+### 📺 Public Display (TV Mode)
+- **Queue Monitor**: A dedicated, auto-refreshing page (`/queue`) designed for large clinic TV screens to show the current and upcoming tokens.
 
-This project aims to solve these challenges using a simple, mobile-friendly, and low-cost digital solution.
+---
 
-🎯 Project Goal
+## �️ Tech Stack
 
-To build a web-based queue system that enables:
+- **Frontend**: [Next.js 15](https://nextjs.org/) (App Router), [Tailwind CSS](https://tailwindcss.com/)
+- **Backend**: Node.js, Express.js
+- **Database**: SQLite (Lightweight, zero-config)
+- **Animations**: Framer Motion
+- **Notifications**: Nodemailer (Email), React Hot Toast
 
-✔ Patients to take digital tokens
+---
 
-✔ Hospitals to manage queues in real time
+## ⚡ Getting Started
 
-✔ Doctors to call patients smoothly
+Follow these steps to run **NoQ** locally on your machine.
 
-✔ Optional SMS/WhatsApp-style notifications
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
 
-All while being:
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/yourusername/noq-system.git
+cd noq-system
+```
 
-Simple to use
+### 2️⃣ Backend Setup
+The backend runs on port `5000` and handles the SQLite database.
 
-Mobile-friendly
+```bash
+cd Backend
+npm install
+npm start
+```
+*You should see: `🚀 Backend running on http://localhost:5000`*
 
-Easy to adopt
+### 3️⃣ Frontend Setup
+The frontend runs on port `3000`. Open a **new terminal**.
 
-Affordable for small hospitals
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*Open `http://localhost:3000` in your browser.*
 
-🟢 Key Features
-MVP (Week 1–3)
+---
 
-Patient Registration (Name, Phone, Department)
+## � Screenshots
 
-Digital Token Generation
+| **Home Page** | **Doctor Dashboard** |
+|:---:|:---:|
+| *Professional Landing Page for Patients & Doctors* | *Manage Queue, Consult & Skip Patients* |
 
-Live Queue Dashboard (Now Serving, Estimated Time)
+| **Live Queue (TV)** | **Mobile Booking** |
+|:---:|:---:|
+| *Auto-updating Public Display* | *Fast Token Generation for Patients* |
 
-Hospital / Doctor Panel
+---
 
-View patient list
+## 🤝 Contributing
 
-Call next patient
+We welcome contributions! Please fork the repo and submit a pull request.
 
-Skip patient
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Mark completed
+---
 
-Basic Authentication (Admin / Hospital Login)
-
-Responsive UI using Tailwind CSS
-
-🟡 Nice-to-Have (Week 4)
-
-WhatsApp / SMS / Email Notifications
-
-Queue Analytics (Daily patients, Peak hours)
-
-Multilingual Support (English + Hindi)
-
-Print Token Option
-
-Role-Based Access (Admin / Staff / Doctor)
-
-🛠 Tech Stack
-Frontend
-
-Next.js – Routing, SSR, performance
-
-Tailwind CSS – Clean and fast UI
-
-Backend
-
-Node.js + Express
-
-RESTful APIs
-
-Database
-
-MongoDB Atlas
-
-Deployment
-
-Frontend: Vercel 
-
-Backend: Render 
-
-Database: MongoDB Atlas
-
-Tools
-
-GitHub (Version control & PRs)
-
-Postman (API testing)
-
-Figma (Wireframes)
-
-Trello / Jira (Task tracking)
-
-🧱 System Architecture
-Patient → Registration Form → Token Generated → Queue Updated
-Doctor/Hospital Panel → Controls Queue → Calls Patient
-Live Dashboard → Displays Real-Time Queue Status
-
-Frontend (Next.js)
-        ↕
-Backend API (Express)
-        ↕
-MongoDB Atlas
-
-👥 Team Roles
-Member	Role	Responsibilities
-Devansh	Full-Stack Lead	Backend APIs, DB schema, repo setup
-Sonica	Frontend Lead	UI, forms, dashboard pages
-Sanskar	DevOps & Testing	Deployment, environment, testing
-
-All members collaborate on documentation and sprint reviews.
-
-🗓 Sprint Timeline (4 Weeks)
-✅ Week 1 – Planning & Setup
-
-Feature finalization
-
-Wireframes
-
-Repo setup
-
-Next.js + Express boilerplate
-
-MongoDB connection
-
-Deliverables:
-✔ Architecture diagram
-✔ Basic UI skeleton
-✔ Repo initialized
-
-✅ Week 2 – Core MVP Development
-
-Patient registration form
-
-Token generation logic
-
-Queue APIs
-
-Basic hospital dashboard
-
-Deliverables:
-✔ Token system working
-✔ Queue stored & displayed
-
-✅ Week 3 – Queue Management & Auth
-
-Hospital login
-
-Call next / skip patient
-
-Realtime updates (polling)
-
-UI improvements
-
-Deliverables:
-✔ End-to-end queue flow
-✔ MVP demo-ready
-
-✅ Week 4 – Enhancements & Deployment
-
-Notifications (optional)
-
-Analytics dashboard
-
-Error handling
-
-Deployment
-
-Final documentation
-
-Deliverables:
-✔ Live hosted app
-✔ Demo video
-✔ Final report
-
-✅ Definition of Done
-
-A feature is considered DONE when:
-
-Code merged into main
-
-Tested on mobile & desktop
-
-Documented clearly
-
-Deployed and accessible online
-
-📊 Success Criteria
-
-The project is successful if:
-
-✔ Queue creation completes within 10 seconds
-
-✔ 20+ patients can be handled smoothly
-
-✔ Doctors can call next patient without refresh
-
-✔ App works on low internet speeds
-
-✔ Live deployment link available
-
-🏁 Conclusion
-
-This project delivers a practical, scalable, and affordable digital queue system tailored for hospitals in Tier-2/3 cities — improving patient experience and hospital efficiency without costly infrastructure.
-
-
-Current progress: 
-The testing of the MVP is in progress. 
-For now, It you can select your role (Patient/ Doctor) followed by the generation of a token for the patient while the doctor getting the same token and manage the queue accordingly.
-
-Personal Detail- 
-
-These decisions are final so we don’t go in circles:
-
-✅ Backend: Express
-
-✅ Database: SQLite
-
-✅ Auth: bcrypt + JWT
-
-✅ Doctor = Admin
-
-✅ Patient does NOT need login
-
-✅ Patient medical data must be saved
-
-✅ Doctor admin page can view it
+## 📄 License
+Attribute-NonCommercial-NoDerivs 4.0 International

@@ -68,14 +68,14 @@ export default function PatientPage() {
 
             <input
               placeholder="Full Name *"
-              className="border border-slate-300 p-3 w-full mb-4 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 p-3 w-full mb-4 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
 
             <input
               placeholder="Phone Number *"
-              className="border border-slate-300 p-3 w-full mb-4 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 p-3 w-full mb-4 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
@@ -83,14 +83,14 @@ export default function PatientPage() {
             <input
               placeholder="Email (optional)"
               type="email"
-              className="border border-slate-300 p-3 w-full mb-4 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 p-3 w-full mb-4 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
 
             <input
               placeholder="Department *"
-              className="border border-slate-300 p-3 w-full mb-6 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-slate-300 p-3 w-full mb-6 rounded-lg text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
             />

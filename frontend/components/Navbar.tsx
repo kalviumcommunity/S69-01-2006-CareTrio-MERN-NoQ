@@ -1,92 +1,82 @@
-'use client';
-
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Stethoscope, User, Menu } from 'lucide-react';
-import { useEffect, useState } from 'react';
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { User, LogOut, ChevronDown } from "lucide-react";
 
 export default function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login"; // Hard refresh to clear state
   };
 
   return (
-    <motion.header
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="sticky top-0 z-50"
-    >
-      {/* Glass background */}
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-xl border-b border-slate-200" />
-
-      <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-semibold shadow-sm">
-            N
-          </div>
-          <span className="font-semibold tracking-tight text-slate-900">
-            NoQ
-          </span>
-        </Link>
-
-        {/* Center Nav (desktop) */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-700">
-          <Link
-            href="/doctor"
-            className="flex items-center gap-1 hover:text-blue-600 transition"
-          >
-            <Stethoscope className="h-4 w-4" /> Doctor
-          </Link>
-          <Link
-            href="/patient"
-            className="flex items-center gap-1 hover:text-blue-600 transition"
-          >
-            <User className="h-4 w-4" /> Patient
-          </Link>
-        </nav>
-
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          {isLoggedIn ? (
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition"
-            >
-              Logout
-            </button>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
-              >
-                Get Started
-              </Link>
-            </>
-          )}
-
-          {/* Mobile menu icon (future use) */}
-          <button className="md:hidden p-2 rounded-lg hover:bg-slate-100">
-            <Menu className="h-5 w-5 text-slate-700" />
-          </button>
+    <nav className="bg-white shadow-sm border-b border-gray-100 py-4 px-6 flex justify-between items-center sticky top-0 z-50">
+      <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+          N
         </div>
-      </div>
-    </motion.header>
+        <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+          NoQ
+        </span>
+      </Link>
+
+      {/* Only show profile if user is logged in */}
+      {user ? (
+        <div className="relative">
+          <button
+            onClick={() => setShowProfile(!showProfile)}
+            className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2 rounded-xl transition-all"
+          >
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-semibold text-gray-800">
+                Dr. {user.name?.split(" ")[0] || "Doctor"}
+              </p>
+              <p className="text-xs text-gray-500">General Physician</p>
+            </div>
+            <div className="w-10 h-10 bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white shadow-md">
+              <User size={20} />
+            </div>
+            <ChevronDown size={16} className="text-gray-400" />
+          </button>
+
+          {showProfile && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-4 border-b border-gray-50 bg-gray-50/50">
+                <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                <p className="text-xs text-gray-500">{user.email}</p>
+              </div>
+              
+              <div className="p-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <LogOut size={16} />
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex gap-4">
+             <Link href="/login" className="text-lg font-semibold text-gray-600 hover:text-blue-600 transition">Login</Link>
+             <Link href="/signup" className="text-lg font-semibold text-blue-600 hover:text-blue-700 transition">Sign Up</Link>
+        </div>
+      )}
+    </nav>
   );
 }

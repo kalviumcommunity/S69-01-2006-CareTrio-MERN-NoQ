@@ -22,7 +22,11 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
 
-    "plugins": [{ "name": "next" }]
+    "plugins": [{ "name": "next" }],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "next-env.d.ts",
